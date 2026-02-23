@@ -1,0 +1,5 @@
+# build artifacts
+jk-tetris
+*.o
+*.obj
+*.exe
