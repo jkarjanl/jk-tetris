@@ -1,42 +1,78 @@
 #include <SDL2/SDL.h>
+#include <stdbool.h>
 #include <stdio.h>
 
-int main(void) {
+typedef struct {
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+    bool running;
+} App;
+
+bool init(App *app) {
+
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
-        return 1;
+        return false;
     }
 
-    SDL_Window *window = SDL_CreateWindow(
+    app->window = SDL_CreateWindow(
         "jk-tetris",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         800, 600,
         SDL_WINDOW_SHOWN
     );
 
-    if (!window) {
-        fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
-        SDL_Quit();
-        return 1;
+    if (!app->window) {
+        printf("CreateWindow Error: %s\n", SDL_GetError());
+        return false;
     }
 
-    // Pieni event loop: ikkuna pysyy auki kunnes suljet sen
-    int running = 1;
-    while (running) {
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) {
-                running = 0;
+    app->renderer = SDL_CreateRenderer(app->window, -1, SDL_RENDERER_ACCELERATED);
+    if (!app->renderer) {
+        printf("CreateRenderer Error: %s\n", SDL_GetError());
+        return false;
+    }
+
+    app->running = true;
+
+    return true;
+}
+
+void run(App *app) {
+
+    SDL_Event event;
+
+    while (app->running) {
+
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                app->running = false;
             }
         }
 
-        // Tässä kohtaa myöhemmin piirrät ruudun (renderer tms.)
-        SDL_Delay(16); // ~60fps "hengähdys"
+        SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
+        SDL_RenderClear(app->renderer);
+
+        SDL_RenderPresent(app->renderer);
+    }
+}
+
+void cleanup(App *app) {
+    SDL_DestroyRenderer(app->renderer);
+    SDL_DestroyWindow(app->window);
+    SDL_Quit();
+}
+
+int main(void) {
+
+    App app;
+
+    if (!init(&app)) {
+        return 1;
     }
 
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    run(&app);
+    cleanup(&app);
 
     return 0;
 }
-
